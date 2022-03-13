@@ -2,40 +2,63 @@
 #include <math.h>
 
 #define MAX_PATH 255
+#define USERNAME_AND_PASSWORD_LENGTH 20
 
 void printMenu(int);
 int getUnsignedInt(int maxLength);
+void inputString(char[], int);
+int createDatabase(char[MAX_PATH], int);
+
+
+typedef struct dataStructure{
+	int id;
+	char user[USERNAME_AND_PASSWORD_LENGTH];
+	char password[USERNAME_AND_PASSWORD_LENGTH];
+	
+} DataStructure;
 
 int main( void ){
 	
 	printMenu(0);
 	
-	FILE *dbFilePtr;
 	int dbChoose;
 	char dbPath[MAX_PATH];
 	int dbDataSize;
+	int state = 1;
 	
-	printMenu(1);
-	int choose = getUnsignedInt(1);
 	
-	switch(choose){
+	while(state){
 		
-		case 1:
-			printf("Database name: ");
-			fgets(dbPath, MAX_PATH, stdin);
-			break;
+		printMenu(1);
+		dbChoose = getUnsignedInt(1);
+		
+		switch(dbChoose){
 			
-		case 2:
-			printf("Database name(or path): ");
-			fgets(dbPath, 50, stdin);
-			printf("Database size: ");
-			dbDataSize = getUnsignedInt(9);
+			case 1:
+				printf("Database name: ");
+				inputString(dbPath, MAX_PATH);
+				
+				//state = initDatabase();
+				
+				break;
+				
+			case 2:
+				printf("Database name(or path): ");
+				inputString(dbPath, MAX_PATH);
+				
+				printf("Database size: ");
+				dbDataSize = getUnsignedInt(8);
+				
+				state = createDatabase(dbPath, dbDataSize);
+				
+				state = 0;
+				break;
 			
-			printf("%s | %d", dbPath, dbDataSize);
-			break;
-	
+			default:
+				printf("\n!! invalid entryid !! \n");
+		
+		}
 	}
-	
 	return 0;
 	
 }
@@ -63,8 +86,38 @@ void printMenu(int printNumber){
 }
 
 
+int createDatabase(char dbPath[], int dbDataSize){
+	
+	FILE *dbFilePtr;
+	DataStructure reg = {0, "", ""};
+	
+	
+	if((dbFilePtr = fopen(dbPath, "wb")) == NULL){
+		printf("Failed to create database.\n");
+	} else{
+		
+		/*add the database size to the beginning of the file. 
+		  Caution! It can be added with a password control in case it is changed manually. 
+		  This can be done with a struct. */
+		fwrite(&dbDataSize, sizeof(int), 1, dbFilePtr);
+		
+		int i;
+		for(i = 0; i < dbDataSize; i++){
+			fwrite(&reg, sizeof(DataStructure), 1, dbFilePtr);
+		}
+		
+		fclose(dbFilePtr);
+	}
+	
+	
+}
+
+
 // safe method to get int input value in a controlled way
 int getUnsignedInt(int maxLength){
+	
+	if(maxLength > 8)
+		return -1;
 	
 	char input[maxLength];
 	fgets(input, maxLength + 1, stdin);
@@ -92,11 +145,24 @@ int getUnsignedInt(int maxLength){
 		}
 			
 	}
-	
-	char ch;
-	while( (ch = getchar()) != '\n' && ch != EOF); // clear buffer
+	fflush(stdin); // clear buffer
 	
 	return value;
+	
+}
+
+
+// safe method to string input value in a controlled way
+void inputString(char buffer[], int maxLength){
+	
+	fgets(buffer, MAX_PATH, stdin);
+	
+	int i;
+	for(i = 0; buffer[i] != '\n' && buffer[i] != '\0'; i++);
+	
+	buffer[i - 1] = '\0'; // add end of line
+	
+	fflush(stdin); // clear buffer
 	
 }
 
