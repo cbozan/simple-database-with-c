@@ -11,7 +11,9 @@ void inputString(char[], int);
 int createDatabase(char[MAX_PATH], int);
 int initDatabase(char[]);
 int listData(FILE *, int);
+int addData(FILE *, int);
 int getDataPosition(FILE *, int , int );
+
 
 
 typedef struct dataStructure{
@@ -136,12 +138,28 @@ int initDatabase(char dbPath[]){
 						printf("\n\n!! data could not be read !!\n\n");
 					} else{
 						
-						fseek(dbFilePtr, sizeof(int), SEEK_SET);
+						resetFileCursor(dbFilePtr);
 						state = listData(dbFilePtr, dbDataSize);
-						rewind(dbFilePtr);
+						resetFileCursor(dbFilePtr);
 						
 					}
 					
+					fclose(dbFilePtr);
+					
+					break;
+					
+				case 2:
+					if((dbFilePtr = fopen(dbPath, "rb+")) == NULL){
+						printf("\n\n!! data could not be write !!\n\n");
+					} else{
+						
+						resetFileCursor(dbFilePtr);
+						state = addData(dbFilePtr, dbDataSize);
+						resetFileCursor(dbFilePtr);
+						
+					}
+					
+					fclose(dbFilePtr);
 					break;
 				
 				default:
@@ -171,31 +189,103 @@ int listData(FILE *dbFilePtr, int dbDataSize){
 		printMenu(4, "");
 		choose = getUnsignedInt(1);
 		switch(choose){
-			
 			case 1:
 				printf("Enter id : ");
 				position = getDataPosition(dbFilePtr, dbDataSize, getUnsignedInt(MAX_MEMORY_DIGIT_LENGTH));
+				
 				if(position != -1){
 					fread(&reg, sizeof(DataStructure), 1, dbFilePtr);
+					printf("\n\n\n%*s%*s | %*s%*s | %*s%*s\n\n\n", 20 + strlen("ID")/2,  "ID", 20 - strlen("ID")/2, "");
 					printf("%*s%*s | %*s%*s | %*s%*s",
-							  15 - (floor(log10(abs(reg.id))) + 1)/2, reg.id, 15 + (floor(log10(abs(reg.id))) + 1) / 2, "",
-							  15 - strlen(reg.user) / 2, reg.user, 15 + strlen(reg.user) / 2, "",
-							  15 - strlen(reg.password) / 2, reg.password, 15 + strlen(reg.password) / 2, ""
+							  20 + (floor(log10(abs(reg.id))) + 1)/2, reg.id, 20 - (floor(log10(abs(reg.id))) + 1) / 2, "",
+							  20 + strlen(reg.user) / 2, reg.user, 20 - strlen(reg.user) / 2, "",
+							  20 + strlen(reg.password) / 2, reg.password, 20 - strlen(reg.password) / 2, ""
 							  );
 					
 					resetFileCursor(dbFilePtr);
 							  
 				}
+				state = 0;
+				fflush(stdin);
 				break;
 			
 			case 2:
+				printf("\n\n\n%*s%*s | %*s%*s | %*s%*s\n\n\n", 20 + strlen("ID")/2,  "ID", 20 - strlen("ID")/2, "");
 				for(i = 0; i < dbDataSize; i++){
-					// list all data
+					fread(&reg, sizeof(DataStructure), 1, dbFilePtr);
+					if(reg.id != 0){
+						printf("%*s%*s | %*s%*s | %*s%*s",
+							  20 + (floor(log10(abs(reg.id))) + 1)/2, reg.id, 20 - (floor(log10(abs(reg.id))) + 1) / 2, "",
+							  20 + strlen(reg.user) / 2, reg.user, 20 - strlen(reg.user) / 2, "",
+							  20 + strlen(reg.password) / 2, reg.password, 20 - strlen(reg.password) / 2, ""
+							  );
+					}
 				}
+				fflush(stdin);
+				state = 0;
+				break;
 			
+			case 3:
+				state = 0;
+				fflush(stdin);
+				break;
+				
+			default:
+				printf("\n!! invalid entryid !! \n\n");
+				fflush(stdin);
+				break;
+				
 		}
 		
 		
+	}
+	
+	return state;
+	
+}
+
+
+int addData(FILE * dbFilePtr, int dbDataSize){
+	
+	int choose;
+	int position;
+	DataStructure reg;
+	int i, id;
+	char user[USERNAME_AND_PASSWORD_LENGTH], pass[USERNAME_AND_PASSWORD_LENGTH];
+	
+	
+	int state = 1;	
+	while(state){
+		
+		printf("\n--- New Record --- \n");
+		
+		printf("ID : ");
+		id = getUnsignedInt(MAX_MEMORY_DIGIT_LENGTH);
+		
+		printf("\nuser : ");
+		inputString(user, USERNAME_AND_PASSWORD_LENGTH);
+		
+		printf("\npass : ");
+		inputString(pass, USERNAME_AND_PASSWORD_LENGTH);
+		
+		if(id > 0 && id <= dbDataSize){
+			
+			reg.id = id;
+			strcpy(reg.user, user);
+			strcpy(reg.password, pass);
+			
+			fseek(dbFilePtr, sizeof(DataStructure) * (id - 1), SEEK_CUR);
+			fwrite(&reg, sizeof(DataStructure), 1, dbFilePtr);
+			
+			printf("\n\ncompleted successfully\n\n");
+			
+			state = 0;
+			
+		} else{
+			printf("\n\n!! ID out of range !!\n\n");
+		}
+		
+		state = -1;
 	}
 	
 	return state;
@@ -224,9 +314,8 @@ int getDataPosition(FILE *dbFilePtr, int dbDataSize, int id){
 
 void resetFileCursor(FILE *dbFilePtr){
 	
-	
-	fseek(dbFilePtr, 1, SEEK_SET);
-	
+	fseek(dbFilePtr, sizeof(int), SEEK_SET);
+
 }
 
 
@@ -321,9 +410,11 @@ void printMenu(int printNumber, char message[]){
 		case 4:
 			printf("1 - List by id entered\n"
 					"2 - List all data\n"
+					"3 - Return\n"
 					"\nYour choose : "
 					);
 			break;
+		
 			
 		
 	}
