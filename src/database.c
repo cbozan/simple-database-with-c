@@ -13,6 +13,7 @@ int initDatabase(char[]);
 int listData(FILE *, int);
 int addData(FILE *, int);
 int getDataPosition(FILE *, int , int );
+void setFileCursor(FILE *dbFilePtr, int nextBayt);
 
 
 
@@ -123,6 +124,8 @@ int initDatabase(char dbPath[]){
 		printf("\n\n!! Failed to read database. !!\n\n");
 	} else{
 		
+		fread(&dbDataSize, sizeof(int), 1, dbFilePtr);
+		
 		fclose(dbFilePtr);
 		
 		
@@ -138,9 +141,9 @@ int initDatabase(char dbPath[]){
 						printf("\n\n!! data could not be read !!\n\n");
 					} else{
 						
-						resetFileCursor(dbFilePtr);
+						setFileCursor(dbFilePtr, 0);
 						state = listData(dbFilePtr, dbDataSize);
-						resetFileCursor(dbFilePtr);
+						setFileCursor(dbFilePtr, 0);
 						
 					}
 					
@@ -153,9 +156,9 @@ int initDatabase(char dbPath[]){
 						printf("\n\n!! data could not be write !!\n\n");
 					} else{
 						
-						resetFileCursor(dbFilePtr);
+						setFileCursor(dbFilePtr, 0);
 						state = addData(dbFilePtr, dbDataSize);
-						resetFileCursor(dbFilePtr);
+						setFileCursor(dbFilePtr, 0);
 						
 					}
 					
@@ -194,15 +197,22 @@ int listData(FILE *dbFilePtr, int dbDataSize){
 				position = getDataPosition(dbFilePtr, dbDataSize, getUnsignedInt(MAX_MEMORY_DIGIT_LENGTH));
 				
 				if(position != -1){
+					setFileCursor(dbFilePtr, position);
 					fread(&reg, sizeof(DataStructure), 1, dbFilePtr);
-					printf("\n\n\n%*s%*s | %*s%*s | %*s%*s\n\n\n", 20 + strlen("ID")/2,  "ID", 20 - strlen("ID")/2, "");
-					printf("%*s%*s | %*s%*s | %*s%*s",
-							  20 + (floor(log10(abs(reg.id))) + 1)/2, reg.id, 20 - (floor(log10(abs(reg.id))) + 1) / 2, "",
-							  20 + strlen(reg.user) / 2, reg.user, 20 - strlen(reg.user) / 2, "",
-							  20 + strlen(reg.password) / 2, reg.password, 20 - strlen(reg.password) / 2, ""
-							  );
 					
-					resetFileCursor(dbFilePtr);
+					printf("\n\n\n%*s%*s | %*s%*s | %*s%*s\n%21s|%22s|%21s\n", 
+							10 + strlen("ID")/2,  "ID", 10 - strlen("ID")/2, "", 
+							10 + strlen("User")/2, "User", 10 - strlen("User")/2, "",
+							10 + strlen("Pass")/2, "User", 10 - strlen("Pass")/2, "",
+							"--------------------", "--------------------", "--------------------");
+					
+					
+					printf("%*d%*s | %*s%*s | %*s%*s",
+							  10 + (int)((floor(log10(abs(reg.id))) + 1)/2), reg.id, 10 - (int)((floor(log10(abs(reg.id))) + 1)/2), "",
+							  10 + strlen(reg.user) / 2, reg.user, 10 - strlen(reg.user) / 2, "",
+							  10 + strlen(reg.password) / 2, reg.password, 10 - strlen(reg.password) / 2, ""
+							  );
+					setFileCursor(dbFilePtr, 0);
 							  
 				}
 				state = 0;
@@ -210,19 +220,29 @@ int listData(FILE *dbFilePtr, int dbDataSize){
 				break;
 			
 			case 2:
-				printf("\n\n\n%*s%*s | %*s%*s | %*s%*s\n\n\n", 20 + strlen("ID")/2,  "ID", 20 - strlen("ID")/2, "");
+				
+				setFileCursor(dbFilePtr, 0);
+				
+				printf("\n\n\n%*s%*s | %*s%*s | %*s%*s\n%21s|%22s|%21s\n", 
+							10 + strlen("ID")/2,  "ID", 10 - strlen("ID")/2, "", 
+							10 + strlen("User")/2, "User", 10 - strlen("User")/2, "",
+							10 + strlen("Pass")/2, "User", 10 - strlen("Pass")/2, "",
+							"--------------------", "--------------------", "--------------------");
+				
 				for(i = 0; i < dbDataSize; i++){
 					fread(&reg, sizeof(DataStructure), 1, dbFilePtr);
 					if(reg.id != 0){
-						printf("%*s%*s | %*s%*s | %*s%*s",
-							  20 + (floor(log10(abs(reg.id))) + 1)/2, reg.id, 20 - (floor(log10(abs(reg.id))) + 1) / 2, "",
-							  20 + strlen(reg.user) / 2, reg.user, 20 - strlen(reg.user) / 2, "",
-							  20 + strlen(reg.password) / 2, reg.password, 20 - strlen(reg.password) / 2, ""
+						printf("%*d%*s | %*s%*s | %*s%*s",
+							  10 + (int)((floor(log10(abs(reg.id))) + 1)/2), reg.id, 10 - (int)((floor(log10(abs(reg.id))) + 1)/2), "",
+							  10 + strlen(reg.user) / 2, reg.user, 10 - strlen(reg.user) / 2, "",
+							  10 + strlen(reg.password) / 2, reg.password, 10 - strlen(reg.password) / 2, ""
 							  );
 					}
 				}
 				fflush(stdin);
 				state = 0;
+				
+				setFileCursor(dbFilePtr, 0);
 				break;
 			
 			case 3:
@@ -312,9 +332,9 @@ int getDataPosition(FILE *dbFilePtr, int dbDataSize, int id){
 }
 
 
-void resetFileCursor(FILE *dbFilePtr){
+void setFileCursor(FILE *dbFilePtr, int nextBayt){
 	
-	fseek(dbFilePtr, sizeof(int), SEEK_SET);
+	fseek(dbFilePtr, sizeof(DataStructure) * nextBayt + sizeof(int), SEEK_SET);
 
 }
 
