@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 #define MAX_PATH 255
 #define USERNAME_AND_PASSWORD_LENGTH 20
@@ -13,8 +14,8 @@ int initDatabase(char[]);
 int listData(FILE *, int);
 int addData(FILE *, int);
 int getDataPosition(FILE *, int , int );
-void setFileCursor(FILE *dbFilePtr, int nextBayt);
-
+void setFileCursor(FILE *, int );
+int deleteData(FILE *, int);
 
 
 typedef struct dataStructure{
@@ -35,7 +36,7 @@ int main( void ){
 	
 	
 	while(state){
-		
+		printf("\n");
 		printMenu(1, "");
 		dbChoose = getUnsignedInt(1);
 		
@@ -47,6 +48,7 @@ int main( void ){
 				
 				state = initDatabase(dbPath);
 				
+				fflush(stdin);
 				break;
 				
 			case 2:
@@ -58,7 +60,12 @@ int main( void ){
 				
 				state = createDatabase(dbPath, dbDataSize);
 		
+				fflush(stdin);
 				break;
+				
+			case -1:
+				printf("\n\nThe database management system has been terminated.\n\nGoodbye!\n");
+				return 0;
 			
 			default:
 				printf("\n!! invalid entryid !! \n\n");
@@ -128,12 +135,13 @@ int initDatabase(char dbPath[]){
 		
 		fclose(dbFilePtr);
 		
-		
-		printMenu(3, "");
-		int choose = getUnsignedInt(1);
+		printMenu(2, dbPath);
 		
 		while(state){
-			
+			printf("\n");
+			printMenu(3, "");
+			int choose = getUnsignedInt(1);
+				
 			switch(choose){
 				
 				case 1:
@@ -147,6 +155,7 @@ int initDatabase(char dbPath[]){
 						
 					}
 					
+					fflush(stdin);
 					fclose(dbFilePtr);
 					
 					break;
@@ -162,8 +171,27 @@ int initDatabase(char dbPath[]){
 						
 					}
 					
+					fflush(stdin);
 					fclose(dbFilePtr);
 					break;
+				
+				case 3:
+					if((dbFilePtr = fopen(dbPath, "rb+")) == NULL){
+						printf("\n\n!! data could not be delete !!\n\n");
+					} else{
+						setFileCursor(dbFilePtr, 0);
+						state = deleteData(dbFilePtr, dbDataSize);
+						setFileCursor(dbFilePtr, 0);
+					}
+					
+					fflush(stdin);
+					fclose(dbFilePtr);
+					break;
+					
+					
+				case -1:
+					fflush(stdin);
+					return 1;
 				
 				default:
 					printf("\nThis option not available\n");
@@ -175,7 +203,7 @@ int initDatabase(char dbPath[]){
 	}
 	
 	
-	return state;
+	return -1;
 }
 
 
@@ -186,81 +214,74 @@ int listData(FILE *dbFilePtr, int dbDataSize){
 	DataStructure reg;
 	int i;
 	
-	int state = 1;	
-	while(state){
-		
-		printMenu(4, "");
-		choose = getUnsignedInt(1);
-		switch(choose){
-			case 1:
-				printf("Enter id : ");
-				position = getDataPosition(dbFilePtr, dbDataSize, getUnsignedInt(MAX_MEMORY_DIGIT_LENGTH));
-				
-				if(position != -1){
-					setFileCursor(dbFilePtr, position);
-					fread(&reg, sizeof(DataStructure), 1, dbFilePtr);
-					
-					printf("\n\n\n%*s%*s | %*s%*s | %*s%*s\n%21s|%22s|%21s\n", 
-							10 + strlen("ID")/2,  "ID", 10 - strlen("ID")/2, "", 
-							10 + strlen("User")/2, "User", 10 - strlen("User")/2, "",
-							10 + strlen("Pass")/2, "User", 10 - strlen("Pass")/2, "",
-							"--------------------", "--------------------", "--------------------");
-					
-					
-					printf("%*d%*s | %*s%*s | %*s%*s",
-							  10 + (int)((floor(log10(abs(reg.id))) + 1)/2), reg.id, 10 - (int)((floor(log10(abs(reg.id))) + 1)/2), "",
-							  10 + strlen(reg.user) / 2, reg.user, 10 - strlen(reg.user) / 2, "",
-							  10 + strlen(reg.password) / 2, reg.password, 10 - strlen(reg.password) / 2, ""
-							  );
-					setFileCursor(dbFilePtr, 0);
-							  
-				}
-				state = 0;
-				fflush(stdin);
-				break;
+	printf("\n");
+	printMenu(4, "");
+	choose = getUnsignedInt(1);
+	
+	switch(choose){
+		case 1:
+			printf("Enter id : ");
+			position = getDataPosition(dbFilePtr, dbDataSize, getUnsignedInt(MAX_MEMORY_DIGIT_LENGTH));
 			
-			case 2:
-				
-				setFileCursor(dbFilePtr, 0);
+			if(position != -1){
+				setFileCursor(dbFilePtr, position);
+				fread(&reg, sizeof(DataStructure), 1, dbFilePtr);
 				
 				printf("\n\n\n%*s%*s | %*s%*s | %*s%*s\n%21s|%22s|%21s\n", 
-							10 + strlen("ID")/2,  "ID", 10 - strlen("ID")/2, "", 
-							10 + strlen("User")/2, "User", 10 - strlen("User")/2, "",
-							10 + strlen("Pass")/2, "User", 10 - strlen("Pass")/2, "",
-							"--------------------", "--------------------", "--------------------");
+						10 + strlen("ID")/2,  "ID", 10 - strlen("ID")/2, "", 
+						10 + strlen("User")/2, "User", 10 - strlen("User")/2, "",
+						10 + strlen("Pass")/2, "User", 10 - strlen("Pass")/2, "",
+						"--------------------", "--------------------", "--------------------");
 				
-				for(i = 0; i < dbDataSize; i++){
-					fread(&reg, sizeof(DataStructure), 1, dbFilePtr);
-					if(reg.id != 0){
-						printf("%*d%*s | %*s%*s | %*s%*s",
-							  10 + (int)((floor(log10(abs(reg.id))) + 1)/2), reg.id, 10 - (int)((floor(log10(abs(reg.id))) + 1)/2), "",
-							  10 + strlen(reg.user) / 2, reg.user, 10 - strlen(reg.user) / 2, "",
-							  10 + strlen(reg.password) / 2, reg.password, 10 - strlen(reg.password) / 2, ""
-							  );
-					}
-				}
-				fflush(stdin);
-				state = 0;
 				
+				printf("%*d%*s | %*s%*s | %*s%*s\n",
+						  10 + (int)((floor(log10(abs(reg.id))) + 1)/2), reg.id, 10 - (int)((floor(log10(abs(reg.id))) + 1)/2), "",
+						  10 + strlen(reg.user) / 2, reg.user, 10 - strlen(reg.user) / 2, "",
+						  10 + strlen(reg.password) / 2, reg.password, 10 - strlen(reg.password) / 2, ""
+						  );
 				setFileCursor(dbFilePtr, 0);
-				break;
+						  
+			}
 			
-			case 3:
-				state = 0;
-				fflush(stdin);
-				break;
-				
-			default:
-				printf("\n!! invalid entryid !! \n\n");
-				fflush(stdin);
-				break;
-				
-		}
+			fflush(stdin);
+			return 1;
 		
+		case 2:
+			
+			setFileCursor(dbFilePtr, 0);
+			
+			printf("\n\n\n%*s%*s | %*s%*s | %*s%*s\n%21s|%22s|%21s\n", 
+						10 + strlen("ID")/2,  "ID", 10 - strlen("ID")/2, "", 
+						10 + strlen("User")/2, "User", 10 - strlen("User")/2, "",
+						10 + strlen("Pass")/2, "User", 10 - strlen("Pass")/2, "",
+						"--------------------", "--------------------", "--------------------");
+			
+			for(i = 0; i < dbDataSize; i++){
+				fread(&reg, sizeof(DataStructure), 1, dbFilePtr);
+				if(reg.id != 0){
+					printf("%*d%*s | %*s%*s | %*s%*s\n",
+						  10 + (int)((floor(log10(abs(reg.id))) + 1)/2), reg.id, 10 - (int)((floor(log10(abs(reg.id))) + 1)/2), "",
+						  10 + strlen(reg.user) / 2, reg.user, 10 - strlen(reg.user) / 2, "",
+						  10 + strlen(reg.password) / 2, reg.password, 10 - strlen(reg.password) / 2, ""
+						  );
+				}
+			}
+			fflush(stdin);
+			setFileCursor(dbFilePtr, 0);
+			
+			return 1;
 		
+		case -1:
+			fflush(stdin);
+			return 1;
+			
+		default:
+			printf("\n!! invalid entryid !! \n\n");
+			fflush(stdin);
+			break;
 	}
 	
-	return state;
+	return -1;
 	
 }
 
@@ -277,10 +298,14 @@ int addData(FILE * dbFilePtr, int dbDataSize){
 	int state = 1;	
 	while(state){
 		
-		printf("\n--- New Record --- \n");
+		printf("\n--- New Record (For exit : -1)--- \n");
 		
 		printf("ID : ");
 		id = getUnsignedInt(MAX_MEMORY_DIGIT_LENGTH);
+		
+		if(id == -1){
+			return 1;
+		}
 		
 		printf("\nuser : ");
 		inputString(user, USERNAME_AND_PASSWORD_LENGTH);
@@ -313,6 +338,48 @@ int addData(FILE * dbFilePtr, int dbDataSize){
 }
 
 
+int deleteData(FILE *dbFilePtr, int dbDataSize){
+
+	DataStructure reg;
+	int id, position;
+	
+	printf("--- deletion process (For exit : -1) ---\n\n");
+	id = getUnsignedInt(MAX_MEMORY_DIGIT_LENGTH);
+	
+	if(id == -1){
+		return 1;
+	}
+	
+	position = getDataPosition(dbFilePtr, dbDataSize, id);
+	if(position == -1){
+		printf("\nNo records found.\n");
+		return 1;
+	}
+	
+	setFileCursor(dbFilePtr, position);
+	fread(&reg, sizeof(DataStructure), 1, dbFilePtr);
+	
+	printf("User %s will be deleted (Y/N) : ", reg.user);
+	char temp[2];
+	inputString(temp, 2);
+	
+	if(strcmp("Y", temp) == 0){
+		reg.id = 0;
+		strcpy(reg.user, "");
+		strcpy(reg.password, "");
+		
+		printf("\ndeleted.\n");
+	} else{
+		
+		printf("\nThe processing has been cancelled.\n");
+		
+	}
+	
+	
+	return 1;
+}
+
+
 int getDataPosition(FILE *dbFilePtr, int dbDataSize, int id){
 	
 	int i;
@@ -332,9 +399,9 @@ int getDataPosition(FILE *dbFilePtr, int dbDataSize, int id){
 }
 
 
-void setFileCursor(FILE *dbFilePtr, int nextBayt){
+void setFileCursor(FILE *dbFilePtr, int nextSize){
 	
-	fseek(dbFilePtr, sizeof(DataStructure) * nextBayt + sizeof(int), SEEK_SET);
+	fseek(dbFilePtr, sizeof(DataStructure) * nextSize + sizeof(int), SEEK_SET);
 
 }
 
@@ -382,7 +449,7 @@ int getUnsignedInt(int maxLength){
 // safe method to string input value in a controlled way
 void inputString(char buffer[], int maxLength){
 	
-	fgets(buffer, MAX_PATH, stdin);
+	fgets(buffer, maxLength, stdin);
 	
 	int i;
 	for(i = 0; buffer[i] != '\0'; i++); 
@@ -409,6 +476,7 @@ void printMenu(int printNumber, char message[]){
 		case 1:
 			printf( "1 - Continue with an existing database\n"
 					"2 - Create a new database\n"
+					"? - For exit, enter : -1\n"
 					"\nYour choose : "
 					);
 			break;	
@@ -423,6 +491,7 @@ void printMenu(int printNumber, char message[]){
 				   "2 - Add data\n"
 				   "3 - Delete data\n"
 				   "4 - Update data\n"
+				   "? - Go back : -1\n"
 				   "\nYour choose : "
 				   );
 			break;
@@ -430,7 +499,7 @@ void printMenu(int printNumber, char message[]){
 		case 4:
 			printf("1 - List by id entered\n"
 					"2 - List all data\n"
-					"3 - Return\n"
+					"? - Go back : -1\n"
 					"\nYour choose : "
 					);
 			break;
