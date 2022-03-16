@@ -337,8 +337,8 @@ int addData(FILE * dbFilePtr, int dbDataSize){
 			strcpy(reg.user, user);
 			strcpy(reg.password, pass);
 			
-			position = getDataPosition(dbFilePtr, id);
-			setFileCursor(dbFilePtr, position);
+			
+			setFileCursor(dbFilePtr, id - 1);
 			
 			fwrite(&reg, sizeof(DataStructure), 1, dbFilePtr);
 			
